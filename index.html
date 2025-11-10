@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>隐藏人格测试 - 发现真实的你</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *{font-family:'Noto Sans SC',sans-serif}
+    body{background:linear-gradient(135deg,#6366f1 0%,#ec4899 50%,#3b82f6 100%);min-height:100vh;overflow-x:hidden}
+    .glass-effect{background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2)}
+    .glow-button{box-shadow:0 0 20px rgba(99,102,241,.3);transition:all .3s ease}
+    .glow-button:hover{box-shadow:0 0 30px rgba(99,102,241,.5);transform:translateY(-2px)}
+    .option-button{transition:all .3s ease;border:2px solid transparent}
+    .option-button:hover{transform:scale(1.02);border-color:rgba(99,102,241,.5)}
+    .option-button.selected{background:rgba(99,102,241,.2);border-color:#6366f1;transform:scale(1.05)}
+    .progress-bar{background:linear-gradient(90deg,#6366f1,#ec4899);height:6px;border-radius:3px;transition:width .5s ease}
+    .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+    .modal.active{display:flex}
+    .poster-container{width:1080px;height:1920px;background:linear-gradient(135deg,#6366f1 0%,#ec4899 50%,#3b82f6 100%);position:relative;display:none}
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+  <!-- 欢迎页 -->
+  <div id="welcome-page" class="flex-1 flex flex-col items-center justify-center p-6">
+    <div class="text-center mb-8">
+      <h1 class="text-4xl md:text-6xl font-bold text-white mb-4">隐藏人格测试</h1>
+      <p class="text-xl text-white/80 mb-8">发现真实的你，探索内心的秘密</p>
+      <div class="w-32 h-32 mx-auto mb-8 rounded-full overflow-hidden glass-effect">
+        <img src="resources/hero-bg.jpg" alt="测试图标" class="w-full h-full object-cover">
+      </div>
+    </div>
+    <div class="glass-effect rounded-2xl p-8 max-w-md w-full text-center">
+      <h2 class="text-2xl font-bold text-white mb-4">准备好开始了吗？</h2>
+      <p class="text-white/70 mb-6">15道精心设计的情景题目<br>8种独特的人格类型<br>发现最真实的自己</p>
+      <button onclick="startTest()" class="glow-button bg-white text-purple-600 px-8 py-4 rounded-full font-bold text-lg w-full">开始测试 ✨</button>
+    </div>
+  </div>
+
+  <!-- 测试页 -->
+  <div id="test-page" class="hidden flex-1 flex flex-col p-4 md:p-6">
+    <div class="mb-6">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-white/80 text-sm">第 <span id="current-question">1</span>/15 题</span>
+        <span class="text-white/80 text-sm"><span id="progress-percent">7</span>%</span>
+      </div>
+      <div class="w-full bg-white/20 rounded-full h-2"><div id="progress-bar" class="progress-bar w-0"></div></div>
+    </div>
+    <button id="back-btn" onclick="goBack()" class="mb-4 text-white/60 hover:text-white transition-colors flex items-center"><span class="mr-2">←</span>返回上一题</button>
+    <div class="flex-1 flex flex-col justify-center">
+      <div class="glass-effect rounded-2xl p-6 md:p-8 mb-6">
+        <h2 id="question-text" class="text-xl md:text-2xl font-bold text-white mb-6 leading-relaxed"></h2>
+        <div id="options-container" class="space-y-4"></div>
+      </div>
+      <button id="next-btn" onclick="nextQuestion()" class="glow-button bg-white text-purple-600 px-8 py-4 rounded-full font-bold text-lg w-full opacity-50 cursor-not-allowed" disabled>下一题 →</button>
+    </div>
+  </div>
+
+  <!-- 结果页 -->
+  <div id="result-page" class="hidden flex-1 flex flex-col p-4 md:p-6">
+    <div class="text-center mb-8">
+      <h1 id="result-title" class="text-3xl md:text-5xl font-bold text-white mb-2"></h1>
+      <p id="result-subtitle" class="text-xl text-white/80 mb-4"></p>
+      <p id="result-description" class="text-lg text-white/70 mb-6"></p>
+      <p id="result-stats" class="text-sm text-white/60"></p>
+    </div>
+    <div class="mb-8"><h3 class="text-xl font-bold text-white mb-4 text-center">代表人物</h3><div id="characters-carousel" class="flex overflow-x-auto space-x-4 pb-4"></div></div>
+    <div class="mb-8"><h3 class="text-xl font-bold text-white mb-4 text-center">生活特征</h3><div id="traits-container" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div></div>
+    <div class="space-y-4">
+      <button onclick="generatePoster()" class="glow-button bg-white text-purple-600 px-6 py-3 rounded-full font-bold w-full">生成我的性格海报 📱</button>
+      <button onclick="showPaymentModal()" class="glow-button bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-6 py-3 rounded-full font-bold w-full">解锁《隐藏人格密码》PDF 🔓</button>
+      <button onclick="restartTest()" class="text-white/60 hover:text-white transition-colors w-full">重新测试</button>
+    </div>
+  </div>
+
+  <!-- 支付模态框 -->
+  <div id="payment-modal" class="modal"><div class="glass-effect rounded-2xl p-8 max-w-md w-full mx-4">
+    <div class="text-center mb-6"><h3 class="text-2xl font-bold text-white mb-2">解锁完整报告</h3><p class="text-white/70">支付9.9元，获取你的专属人格分析</p></div>
+    <div class="mb-6"><img src="resources/wechat-pay.png" alt="微信支付" class="w-48 h-48 mx-auto rounded-lg"></div>
+    <div class="text-white/80 mb-6 space-y-2"><p>✨ 你的社交能量补给方式</p><p>🎯 最适合你的3个职业方向</p><p>🤝 如何与不同类型朋友相处</p></div>
+    <div class="space-y-3">
+      <button onclick="simulatePayment()" class="glow-button bg-green-500 text-white px-6 py-3 rounded-full font-bold w-full">模拟支付成功</button>
+      <button onclick="closePaymentModal()" class="text-white/60 hover:text-white transition-colors w-full">稍后再说</button>
+    </div>
+  </div></div>
+
+  <!-- 海报容器 -->
+  <div id="poster-container" class="poster-container"><div class="h-full flex flex-col justify-between p-16">
+    <div class="text-center"><h1 id="poster-title" class="text-8xl font-bold text-white mb-4"></h1><p id="poster-subtitle" class="text-4xl text-white/80 mb-8"></p></div>
+    <div id="poster-traits" class="space-y-6"></div>
+    <div class="flex items-center justify-between"><div class="text-white/70"><p class="text-2xl">测测你是哪种隐藏人格？</p><p class="text-xl">扫码发现真实的自己</p></div><img src="resources/qr-code.png" alt="二维码" class="w-32 h-32"></div>
+  </div></div>
+
+  <script src="questions-data.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
